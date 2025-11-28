@@ -1,31 +1,23 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\ArmadaController; // <-- TAMBAHKAN INI
+use App\Http\Controllers\AuthController;
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes
+| Web Routes - Google OAuth Routes
 |--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "web" middleware group. Make something great!
-|
 */
 
-// Ganti 'welcome' jadi 'app'
-Route::get('/{any?}', function () {
-    return view('app'); // <-- Pastikan ini 'app', BUKAN 'welcome'
+// ⚡ PENTING: Route ini harus di ATAS catch-all route
+Route::get('/auth/google', [AuthController::class, 'redirectToGoogle']);
+Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
+
+/*
+|--------------------------------------------------------------------------
+| Catch-all Route untuk React Router
+|--------------------------------------------------------------------------
+*/
+Route::get('/{any}', function () {
+    return view('app');
 })->where('any', '.*');
-
-Route::prefix('admin')->middleware('auth:sanctum')->group(function () { 
-    // Rute dashboard dari sebelumnya
-    Route::get('/dashboard-stats', [DashboardController::class, 'getStats']);
-
-    // TAMBAHKAN RUTE INI UNTUK ARMADA
-    Route::apiResource('armada', ArmadaController::class)->parameters([
-        'armada' => 'id_armada' // Ini untuk menyesuaikan 'id_armada'
-    ]);
-});

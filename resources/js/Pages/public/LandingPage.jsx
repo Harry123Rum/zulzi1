@@ -1,33 +1,117 @@
 import React, { useState, useEffect } from 'react';
-import GuestLayout from '../../layouts/GuestLayout'; 
-import ServiceCard from '../../components/ServiceCard';
-import ReviewCard from '../../components/ReviewCard';
+import { Truck, User, Star, Calendar, CheckCircle, Phone, Zap, Shield, Clock, Users } from 'lucide-react';
+import Navbar from '../../Components/Navbar';
+import Footer from '../../Components/Footer';
 import { getPublicServices } from '../../services/serviceService';
 import { getPublicReviews } from '../../services/reviewService';
-// Menggunakan tombol seragam dari ReusableUI
-import { PrimaryButton } from '../../Components/ReusableUI'; 
 
-export default function LandingPage() { 
-  
+// Data Armada ditanam langsung di Front-end
+const ARMADA_DATA = [
+  {
+    id_layanan: 1,
+    nama_layanan: 'Angkut Barang',
+    armada: [
+      {
+        id_armada: 1,
+        no_plat: 'B 1001 ZUL',
+        jenis_kendaraan: 'Minibus',
+        kapasitas: '19 Orang',
+        harga_sewa_per_hari: 800000,
+        status_ketersediaan: 'Tersedia',
+      },
+      {
+        id_armada: 2,
+        no_plat: 'B 2002 TRANS',
+        jenis_kendaraan: 'Truk Box',
+        kapasitas: '4 Ton',
+        harga_sewa_per_hari: 1200000,
+        status_ketersediaan: 'Tersedia',
+      },
+    ]
+  },
+  {
+    id_layanan: 2,
+    nama_layanan: 'Angkut Sampah',
+    armada: [
+      {
+        id_armada: 3,
+        no_plat: 'B 3003 ZUL',
+        jenis_kendaraan: 'Avanza',
+        kapasitas: '7 Orang',
+        harga_sewa_per_hari: 450000,
+        status_ketersediaan: 'Tersedia',
+      },
+      {
+        id_armada: 4,
+        no_plat: 'B 4004 TRANSPORT',
+        jenis_kendaraan: 'Canter',
+        kapasitas: '3 Ton',
+        harga_sewa_per_hari: 600000,
+        status_ketersediaan: 'Tersedia',
+      },
+    ]
+  },
+  {
+    id_layanan: 3,
+    nama_layanan: 'Sewa Kendaraan',
+    armada: [
+      {
+        id_armada: 5,
+        no_plat: 'B 5005 RENTAL',
+        jenis_kendaraan: 'Innova',
+        kapasitas: '8 Orang',
+        harga_sewa_per_hari: 750000,
+        status_ketersediaan: 'Tersedia',
+      },
+      {
+        id_armada: 6,
+        no_plat: 'B 6006 ZULZI',
+        jenis_kendaraan: 'Elf',
+        kapasitas: '16 Orang',
+        harga_sewa_per_hari: 950000,
+        status_ketersediaan: 'Tersedia',
+      },
+    ]
+  },
+];
+
+export default function LandingPage(props) { 
+  // props.auth biasanya dikirim otomatis oleh Laravel/Inertia middleware ke page component
+  const auth = props.auth || {}; 
+
   const [services, setServices] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeFeature, setActiveFeature] = useState(0);
+  const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
+  const [hoveredService, setHoveredService] = useState(null);
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const serviceResponse = await getPublicServices();
+        // Set data armada dari konstanta (tidak query DB)
+        setServices(ARMADA_DATA);
+
+        // Fetch reviews dari API
         const reviewResponse = await getPublicReviews();
-
-        // Logic aman biar gak error map undefined
-        const serviceData = serviceResponse.data.data || serviceResponse.data;
-        const reviewData = reviewResponse.data.data || reviewResponse.data;
-
-        setServices(Array.isArray(serviceData) ? serviceData : []);
-        setReviews(Array.isArray(reviewData) ? reviewData : []);
-
+        const reviewData = reviewResponse.data.data || reviewResponse.data || [];
+        
+        console.log("🎯 Review API Response:", reviewResponse);
+        console.log("📊 Review Data:", reviewData);
+        console.log("📈 Total Reviews:", Array.isArray(reviewData) ? reviewData.length : 0);
+        
+        // Backend sudah filter is_displayed, jadi langsung set
+        const reviews = Array.isArray(reviewData) ? reviewData : [];
+        setReviews(reviews);
+        
+        if (reviews.length === 0) {
+          console.warn("⚠️ Tidak ada review yang ditampilkan. Pastikan:");
+          console.warn("1. Migration sudah dijalankan: php artisan migrate");
+          console.warn("2. Ada data ulasan dengan is_displayed = true di admin");
+        }
       } catch (error) {
-        console.error("Gagal mengambil data landing page:", error);
+        console.error("❌ Gagal mengambil data landing page:", error);
+        setReviews([]);
       } finally {
         setLoading(false);
       }
@@ -35,96 +119,185 @@ export default function LandingPage() {
 
     fetchData();
   }, []); 
+
+  // Auto-rotate features setiap 5 detik
+  useEffect(() => {
+    const featureTimer = setInterval(() => {
+      setActiveFeature(prev => (prev + 1) % 4);
+    }, 5000);
+    return () => clearInterval(featureTimer);
+  }, []);
+
+  // Auto-rotate reviews carousel setiap 5 detik
+  useEffect(() => {
+    if (reviews.length > 0) {
+      const reviewTimer = setInterval(() => {
+        setCurrentReviewIndex(prev => (prev + 1) % Math.max(1, Math.ceil(reviews.length / 4)));
+      }, 5000);
+      return () => clearInterval(reviewTimer);
+    }
+  }, [reviews.length]);
+
   return (
-    <GuestLayout>
+    <div className="font-sans antialiased text-gray-800 bg-white min-h-screen flex flex-col">
       
-      {/* --- HERO SECTION (Biru Besar) --- */}
-      <section className="relative bg-blue-900 text-white py-24 lg:py-32 overflow-hidden">
-        {/* Pattern Background */}
-        <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+      {/* Panggil Navbar Reusable */}
+      <Navbar auth={auth} />
+
+      {/* --- HERO SECTION --- */}
+      <section className="relative bg-gradient-to-br from-[#f0f9ff] via-white to-blue-50 pt-40 pb-40 overflow-hidden">
+        {/* Animated Background Decorations */}
+        <div className="absolute top-20 right-10 w-96 h-96 bg-blue-200 rounded-full blur-3xl opacity-30 animate-pulse"></div>
+        <div className="absolute -bottom-10 -left-10 w-96 h-96 bg-cyan-200 rounded-full blur-3xl opacity-25 animate-pulse" style={{animationDelay: '1s'}}></div>
+        <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-blue-100 rounded-full blur-2xl opacity-20 animate-pulse" style={{animationDelay: '2s'}}></div>
+        
+        {/* Floating Dots Animation */}
+        <div className="absolute top-20 left-10 w-3 h-3 bg-[#00a3e0] rounded-full animate-bounce" style={{animationDelay: '0s'}}></div>
+        <div className="absolute top-40 right-20 w-2 h-2 bg-[#003366] rounded-full animate-bounce" style={{animationDelay: '0.5s'}}></div>
+        <div className="absolute bottom-32 left-1/3 w-2.5 h-2.5 bg-[#00a3e0] rounded-full animate-bounce" style={{animationDelay: '1s'}}></div>
         
         <div className="container mx-auto px-4 relative z-10 text-center">
-          <span className="inline-block py-1 px-3 rounded-full bg-blue-800 text-blue-200 text-sm font-semibold mb-6 tracking-wide uppercase">
-            Solusi Logistik Terpercaya
-          </span>
-          <h1 className="text-4xl md:text-6xl font-extrabold mb-6 tracking-tight leading-tight">
-            PERJALANAN <br className="hidden md:block" />
-            <span className="text-blue-400">TANPA BATAS</span>
-          </h1>
-          <p className="text-lg md:text-xl text-blue-100 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Layanan transportasi yang mengutamakan kenyamanan dan keamanan. Kirim barang, sewa mobil, atau angkut sampah dengan mudah.
-          </p>
-          <div className="flex justify-center gap-4">
-             {/* Tombol Utama dari ReusableUI */}
-            <PrimaryButton 
-              onClick={() => document.getElementById('layanan').scrollIntoView({ behavior: 'smooth' })} 
-              className="bg-white text-blue-900 hover:bg-gray-100 border-0 px-8 py-4 text-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
-            >
-              Cek Harga Layanan
-            </PrimaryButton>
-          </div>
+            <div className="inline-block mb-6 animate-fade-in">
+              <p className="text-xs font-bold text-[#00a3e0] tracking-[0.4em] uppercase px-4 py-2 border border-[#00a3e0]/30 rounded-full bg-blue-50/50 backdrop-blur-sm">
+                  ✨ Transportasi Premium & Terpercaya
+              </p>
+            </div>
+            
+            <div className="mb-6 overflow-hidden">
+              <h1 className="text-6xl md:text-8xl font-black text-[#003366] leading-tight mb-2 animate-slide-up" style={{animationDelay: '0.1s'}}>
+                  PERJALANAN
+              </h1>
+              <h1 className="text-6xl md:text-8xl font-black bg-gradient-to-r from-[#00a3e0] to-[#0088b8] bg-clip-text text-transparent leading-tight mb-8 animate-slide-up" style={{animationDelay: '0.2s'}}>
+                  TANPA BATAS
+              </h1>
+            </div>
+            
+            <p className="text-gray-600 text-lg md:text-xl max-w-3xl mx-auto mb-12 leading-relaxed animate-fade-in" style={{animationDelay: '0.3s'}}>
+                Layanan logistik dan transportasi penumpang yang mengutamakan kenyamanan, 
+                keamanan, dan ketepatan waktu. Mitra perjalanan terbaik Anda untuk setiap petualangan.
+            </p>
+            
+            <div className="flex flex-col md:flex-row justify-center gap-5 animate-fade-in" style={{animationDelay: '0.4s'}}>
+                <button 
+                    onClick={() => document.getElementById('layanan')?.scrollIntoView({ behavior: 'smooth' })}
+                    className="group px-12 py-5 bg-gradient-to-r from-[#003366] to-[#004d99] text-white font-bold rounded-xl hover:shadow-2xl transition-all shadow-lg text-sm uppercase tracking-wider transform hover:-translate-y-2 hover:scale-105 relative overflow-hidden"
+                >
+                    <span className="relative z-10 flex items-center justify-center gap-2">
+                      <Zap size={18} className="group-hover:rotate-12 transition-transform" />
+                      Pesan Sekarang
+                    </span>
+                    <div className="absolute inset-0 bg-white/20 translate-x-full group-hover:translate-x-0 transition-transform duration-300"></div>
+                </button>
+                <button className="group px-12 py-5 bg-white text-[#003366] border-2 border-[#003366] font-bold rounded-xl hover:bg-[#003366] hover:text-white transition-all shadow-md text-sm uppercase tracking-wider transform hover:-translate-y-2 hover:scale-105">
+                    <Phone size={18} className="inline mr-2" />
+                    Hubungi Kami
+                </button>
+            </div>
         </div>
       </section>
 
-      {/* --- STATS BAR (Kotak Putih Mengambang) --- */}
-      <section className="relative z-20 -mt-16 container mx-auto px-4">
-        <div className="bg-white py-10 px-8 shadow-xl rounded-2xl border border-gray-100">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center divide-x divide-gray-100">
-            <div>
-              <span className="block text-4xl font-extrabold text-blue-600 mb-1">5+</span>
-              <span className="text-gray-500 text-sm font-medium uppercase tracking-wide">Tahun</span>
-            </div>
-            <div>
-              <span className="block text-4xl font-extrabold text-blue-600 mb-1">50+</span>
-              <span className="text-gray-500 text-sm font-medium uppercase tracking-wide">Armada</span>
-            </div>
-            <div>
-              <span className="block text-4xl font-extrabold text-blue-600 mb-1">1K+</span>
-              <span className="text-gray-500 text-sm font-medium uppercase tracking-wide">Order</span>
-            </div>
-            <div>
-              <span className="block text-4xl font-extrabold text-blue-600 mb-1">24/7</span>
-              <span className="text-gray-500 text-sm font-medium uppercase tracking-wide">Support</span>
-            </div>
+      {/* --- FEATURES SHOWCASE --- */}
+      <section className="py-20 bg-gradient-to-b from-white to-[#f0f9ff]">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-extrabold text-[#003366] text-center mb-4">Mengapa Memilih Kami?</h2>
+          <p className="text-center text-gray-500 mb-16 max-w-2xl mx-auto">Dengan pengalaman bertahun-tahun, kami menawarkan solusi transportasi terbaik</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {[
+              { icon: <Zap size={32} />, title: 'Respons Cepat', desc: 'Layanan pelanggan 24/7' },
+              { icon: <Shield size={32} />, title: 'Aman & Terpercaya', desc: 'Asuransi penuh coverage' },
+              { icon: <Clock size={32} />, title: 'Tepat Waktu', desc: 'Komitmen ketepatan jadwal' },
+              { icon: <Users size={32} />, title: 'Tim Profesional', desc: 'Supir berpengalaman' }
+            ].map((feature, idx) => (
+              <div
+                key={idx}
+                onClick={() => setActiveFeature(idx)}
+                className={`p-8 rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-105 ${
+                  activeFeature === idx
+                    ? 'bg-[#00a3e0] text-white shadow-xl -translate-y-2'
+                    : 'bg-white border border-gray-100 text-[#003366] hover:bg-[#e0f4ff] hover:border-[#00a3e0] hover:shadow-lg hover:text-[#003366]'
+                }`}
+              >
+                <div className={`mb-4 p-3 rounded-lg w-fit transition-all ${
+                  activeFeature === idx ? 'bg-white/30' : 'bg-blue-50'
+                }`}>
+                  {feature.icon}
+                </div>
+                <h3 className="font-bold text-lg mb-2">{feature.title}</h3>
+                <p className={`text-sm ${activeFeature === idx ? 'text-white/90' : 'text-gray-500'}`}>{feature.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* --- LAYANAN KAMI --- */}
-      <section id="layanan" className="py-24 bg-gray-50">
+      <section id="layanan" className="py-24 bg-white relative">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">LAYANAN KAMI</h2>
-            <div className="w-24 h-1.5 bg-blue-600 mx-auto rounded-full"></div>
-            <p className="text-gray-600 mt-4 max-w-xl mx-auto">Pilih armada yang sesuai dengan kebutuhan logistik Anda dari berbagai kategori layanan kami.</p>
+            <h2 className="text-3xl font-extrabold text-[#003366] mb-4 uppercase tracking-wide">Layanan Kami</h2>
+            <div className="w-20 h-1.5 bg-[#00a3e0] mx-auto rounded-full mb-6"></div>
+            <p className="text-gray-500 max-w-2xl mx-auto">
+                Berbagai pilihan kendaraan dan layanan transportasi untuk memenuhi kebutuhan perjalanan pribadi atau bisnis Anda.
+            </p>
           </div>
 
           {loading ? (
-            <div className="text-center py-20">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
-              <p className="mt-4 text-gray-500 font-medium">Sedang memuat data layanan...</p>
+            <div className="flex justify-center py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[#00a3e0]"></div>
             </div>
           ) : (
             <div className="space-y-20">
               {services.map((service) => (
                 <div key={service.id_layanan}>
-                  {/* Judul Kategori dengan Icon */}
-                  <div className="flex items-center mb-8 pl-2 border-l-4 border-blue-500">
-                    <h3 className="text-2xl font-bold text-gray-800 ml-3 uppercase tracking-wide">{service.nama_layanan}</h3>
+                  {/* Judul Kategori */}
+                  <div className="flex items-center mb-8 border-b border-gray-100 pb-4">
+                    <div className="bg-blue-50 p-3 rounded-lg mr-4 text-[#003366]">
+                        <Truck className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-[#003366]">{service.nama_layanan}</h3>
                   </div>
                   
-                  {service.armada && service.armada.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                      {service.armada.map((item) => (
-                        <ServiceCard key={item.id_armada} armada={item} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                      {service.armada && service.armada.map((item) => (
+                        <div 
+                          key={item.id_armada}
+                          onMouseEnter={() => setHoveredService(item.id_armada)}
+                          onMouseLeave={() => setHoveredService(null)}
+                          className="group bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-300 flex flex-col hover:-translate-y-2 cursor-pointer"
+                        >
+                            {/* Gambar Armada dengan Gradient Overlay */}
+                            <div className="h-48 bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center relative overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-t from-[#003366]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                <Truck className="w-24 h-24 text-gray-300 group-hover:text-[#00a3e0] group-hover:scale-125 transition-all duration-500" />
+                                <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm text-[#003366] text-xs font-extrabold px-4 py-2 rounded-lg shadow-md uppercase tracking-wider">
+                                    {item.kapasitas}
+                                </div>
+                            </div>
+                            
+                            <div className="p-6 flex-grow flex flex-col">
+                                <h4 className="text-lg font-bold text-[#003366] mb-2 line-clamp-1 group-hover:text-[#00a3e0] transition-colors">{item.jenis_kendaraan}</h4>
+                                <p className="text-sm text-gray-400 mb-6 font-medium tracking-wider font-mono">{item.no_plat}</p>
+                                
+                                <div className="mt-auto pt-6 border-t border-gray-100">
+                                    <div className="flex justify-between items-end mb-6">
+                                        <div>
+                                            <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-2 font-semibold">Mulai dari</p>
+                                            <p className="text-[#003366] font-bold text-xl">
+                                                Rp {Number(item.harga_sewa_per_hari).toLocaleString('id-ID')}
+                                            </p>
+                                        </div>
+                                        <span className="text-xs text-gray-400 font-medium">/hari</span>
+                                    </div>
+                                    
+                                    <button className="w-full bg-gradient-to-r from-[#003366] to-[#004d99] hover:from-[#002244] hover:to-[#003d7a] text-white text-sm font-bold py-4 rounded-xl transition-all uppercase tracking-wide transform hover:scale-105 shadow-md hover:shadow-lg active:scale-95">
+                                        Pesan Armada
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                       ))}
-                    </div>
-                  ) : (
-                    <div className="bg-white p-10 rounded-xl border border-dashed border-gray-300 text-center">
-                      <span className="text-4xl mb-4 block">📭</span>
-                      <p className="text-gray-500 font-medium">Belum ada armada tersedia untuk layanan ini.</p>
-                    </div>
-                  )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -133,79 +306,151 @@ export default function LandingPage() {
       </section>
 
       {/* --- TESTIMONI --- */}
-      <section className="py-24 bg-white relative">
-        <div className="absolute top-0 left-0 w-full h-full bg-blue-50 skew-y-3 transform origin-top-right -z-10"></div>
+      <section className="py-24 bg-gradient-to-b from-white via-[#f0f9ff] to-white">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Apa Kata Pelanggan?</h2>
-            <div className="w-24 h-1.5 bg-blue-600 mx-auto rounded-full"></div>
-            <p className="text-gray-600 mt-4">Ulasan asli dari pelanggan yang telah mempercayakan pengirimannya kepada kami.</p>
-          </div>
+            <div className="text-center mb-16">
+                <h2 className="text-3xl font-extrabold text-[#003366] mb-4 uppercase tracking-wide">Apa Kata Pelanggan Kami</h2>
+                <p className="text-gray-500 text-lg">Ulasan asli dari pelanggan yang telah mempercayakan perjalanan mereka kepada Zulzi Trans</p>
+            </div>
 
-          {loading ? (
-            <p className="text-center text-gray-500 py-10">Memuat ulasan...</p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {reviews.length > 0 ? reviews.map((review) => (
-                <ReviewCard key={review.id_ulasan} review={review} />
-              )) : (
-                <div className="col-span-full text-center text-gray-500 italic py-10 bg-gray-50 rounded-lg">Belum ada ulasan yang ditampilkan. Jadilah yang pertama!</div>
+            {/* Carousel Reviews - 4 Card View */}
+            <div className="relative max-w-6xl mx-auto">
+              {reviews.length > 0 ? (
+                <div className="relative overflow-hidden">
+                  {/* Slide Container - Grid 4 Kolom */}
+                  <div className="flex transition-transform duration-500 ease-out" style={{
+                    transform: `translateX(-${currentReviewIndex * 100}%)`
+                  }}>
+                    {reviews.map((review, idx) => (
+                      <div key={review.id_ulasan || idx} className="w-full flex-shrink-0">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 px-2">
+                          {/* Show 4 cards at a time, cycling through reviews */}
+                          {[0, 1, 2, 3].map((offset) => {
+                            const reviewIdx = (idx + offset) % reviews.length;
+                            const currentReview = reviews[reviewIdx];
+                            return (
+                              <div key={`${idx}-${offset}`} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 relative">
+                                {/* Quotation Mark */}
+                                <div className="absolute top-4 right-6 text-blue-100/50">
+                                  <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor"><path d="M14.017 21L14.017 18C14.017 16.0548 15.0112 14.2085 16.5138 13.0269C16.0706 13.0677 15.5931 13.0769 15.0168 13.0769C11.9338 13.0769 9.79797 10.8852 9.79797 7.33829C9.79797 3.69649 12.3168 1 15.6821 1C18.7879 1 21.292 3.31832 21.292 6.94752C21.292 12.5892 18.4938 16.5798 14.017 21ZM5.19599 21L5.19599 18C5.19599 16.0548 6.19024 14.2085 7.69277 13.0269C7.24962 13.0677 6.77209 13.0769 6.1958 13.0769C3.11278 13.0769 0.976929 10.8852 0.976929 7.33829C0.976929 3.69649 3.49579 1 6.8611 1C9.96688 1 12.471 3.31832 12.471 6.94752C12.471 12.5892 9.67276 16.5798 5.19599 21Z" /></svg>
+                                </div>
+                                
+                                {/* User Info */}
+                                <div className="flex items-center gap-3 mb-4">
+                                  <div className="w-12 h-12 bg-gradient-to-br from-[#003366] to-[#00a3e0] rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md">
+                                    {currentReview.pengguna?.nama?.charAt(0) || 'U'}
+                                  </div>
+                                  <div className="flex-grow">
+                                    <h4 className="font-bold text-gray-900 text-sm">{currentReview.pengguna?.nama || 'Pengguna'}</h4>
+                                    <div className="flex text-yellow-400 mt-1 gap-0.5">
+                                      {[...Array(5)].map((_, i) => (
+                                        <Star 
+                                          key={i} 
+                                          size={12} 
+                                          fill="currentColor" 
+                                          className={i < (currentReview.rating || 5) ? "text-yellow-400" : "text-gray-200"} 
+                                        />
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                {/* Comment */}
+                                <p className="text-gray-700 italic leading-relaxed text-[13px] line-clamp-4">
+                                  "{currentReview.komentar}"
+                                </p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Navigation Buttons */}
+                  <div className="flex justify-center items-center gap-4 mt-8">
+                    {/* Previous Button */}
+                    <button
+                      onClick={() => setCurrentReviewIndex(prev => (prev - 1 + reviews.length) % reviews.length)}
+                      className="p-3 rounded-full border border-[#00a3e0] text-[#003366] hover:bg-[#00a3e0] hover:text-white transition-all"
+                    >
+                      ← Sebelumnya
+                    </button>
+
+                    {/* Dots Indicator */}
+                    <div className="flex gap-2">
+                      {reviews.map((_, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setCurrentReviewIndex(idx)}
+                          className={`h-2 rounded-full transition-all ${
+                            currentReviewIndex === idx
+                              ? 'bg-[#00a3e0] w-8'
+                              : 'bg-gray-300 w-2 hover:bg-gray-400'
+                          }`}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Next Button */}
+                    <button
+                      onClick={() => setCurrentReviewIndex(prev => (prev + 1) % reviews.length)}
+                      className="p-3 rounded-full border border-[#00a3e0] text-[#003366] hover:bg-[#00a3e0] hover:text-white transition-all"
+                    >
+                      Selanjutnya →
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-500 text-lg">Belum ada ulasan dari pelanggan.</p>
+                </div>
               )}
             </div>
-          )}
         </div>
-      </section>
-
-      {/* --- CARA PEMESANAN --- */}
-      <section className="py-20 bg-gray-50">
-         <div className="container mx-auto px-4">
-            <div className="text-center mb-16">
-                <h2 className="text-3xl font-bold text-gray-800 mb-4">Cara Pemesanan Mudah</h2>
-                <p className="text-gray-600">Hanya 4 langkah mudah untuk mendapatkan layanan terbaik.</p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-                {[
-                    { step: '01', title: 'Pilih Layanan', desc: 'Tentukan armada yang sesuai kebutuhan Anda.', icon: '🚛' },
-                    { step: '02', title: 'Atur Jadwal', desc: 'Pilih tanggal dan lokasi penjemputan.', icon: '📅' },
-                    { step: '03', title: 'Hubungi Kami', desc: 'Konfirmasi pesanan via WhatsApp.', icon: '💬' },
-                    { step: '04', title: 'Selesai', desc: 'Armada kami siap melayani Anda.', icon: '✅' }
-                ].map((item, index) => (
-                    <div key={index} className="bg-white p-8 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 text-center group">
-                        <div className="w-16 h-16 bg-blue-50 text-2xl rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                            {item.icon}
-                        </div>
-                        <h3 className="font-bold text-xl mb-3 text-gray-800">{item.title}</h3>
-                        <p className="text-gray-600 text-sm leading-relaxed">{item.desc}</p>
-                        <span className="block mt-6 text-blue-200 font-bold text-4xl opacity-20 group-hover:opacity-40 transition-opacity">{item.step}</span>
-                    </div>
-                ))}
-            </div>
-         </div>
       </section>
 
       {/* --- CTA FOOTER --- */}
-      <section className="py-24 bg-white text-center">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-12 rounded-3xl shadow-2xl text-white relative overflow-hidden">
-            {/* Dekorasi lingkaran */}
-            <div className="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 bg-white opacity-10 rounded-full"></div>
-            <div className="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 bg-white opacity-10 rounded-full"></div>
-
-            <h2 className="text-3xl md:text-4xl font-bold mb-6 relative z-10">Siap Untuk Memulai Perjalanan?</h2>
-            <p className="text-blue-100 mb-10 text-lg relative z-10">Hubungi tim kami sekarang untuk mendapatkan penawaran harga terbaik dan konsultasi gratis untuk kebutuhan logistik Anda.</p>
-            <div className="flex justify-center relative z-10">
-              <PrimaryButton 
-                onClick={() => window.open('https://wa.me/628123456789')} 
-                className="bg-white text-blue-700 hover:bg-blue-50 px-10 py-4 text-lg font-bold shadow-lg border-0"
-              >
-                 Hubungi via WhatsApp
-              </PrimaryButton>
+      <section className="py-24 bg-gradient-to-b from-[#f0f9ff] to-white relative overflow-hidden">
+        {/* Background Decorations */}
+        <div className="absolute top-0 right-0 w-80 h-80 bg-blue-100 rounded-full blur-3xl opacity-30 -mr-40 -mt-40"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-100 rounded-full blur-3xl opacity-25 -ml-48 -mb-48"></div>
+        
+        <div className="container mx-auto px-4 text-center relative z-10">
+            <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 p-10 md:p-16 max-w-4xl mx-auto relative overflow-hidden group hover:shadow-3xl transition-all duration-300">
+                {/* Inner Gradient on Hover */}
+                <div className="absolute inset-0 bg-gradient-to-r from-[#003366]/5 to-[#00a3e0]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                
+                <div className="relative z-10">
+                    <h2 className="text-4xl md:text-5xl font-black text-[#003366] mb-6 leading-tight">
+                        Siap Untuk Mulai Perjalanan Anda?
+                    </h2>
+                    <p className="text-gray-600 mb-12 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
+                        Hubungi kami sekarang dan dapatkan penawaran terbaik untuk kebutuhan transportasi Anda. Tim kami siap melayani 24 jam.
+                    </p>
+                    
+                    <div className="flex flex-col md:flex-row justify-center gap-5">
+                        <button 
+                            onClick={() => window.open('https://wa.me/628123456789')} 
+                            className="group/btn inline-flex items-center justify-center gap-3 px-12 py-5 bg-gradient-to-r from-[#00a3e0] to-[#0088b8] hover:from-[#008cc0] hover:to-[#006b93] text-white font-bold rounded-xl text-lg shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1 active:scale-95"
+                        >
+                            <Phone size={22} className="group-hover/btn:rotate-12 transition-transform" />
+                            <span>Hubungi via WhatsApp</span>
+                        </button>
+                        <button 
+                            onClick={() => document.getElementById('layanan')?.scrollIntoView({ behavior: 'smooth' })}
+                            className="inline-flex items-center justify-center gap-3 px-12 py-5 border-2 border-[#003366] text-[#003366] font-bold rounded-xl text-lg hover:bg-[#003366] hover:text-white hover:shadow-xl transition-all transform hover:-translate-y-1 active:scale-95"
+                        >
+                            Pesan Sekarang
+                        </button>
+                    </div>
+                </div>
             </div>
-          </div>
         </div>
       </section>
 
-    </GuestLayout>
+      {/* Panggil Footer Reusable */}
+      <Footer />
+    </div>
   );
 }

@@ -12,29 +12,39 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('pemesanan', function (Blueprint $table) {
+            // Primary Key
             $table->id('id_pemesanan');
             
             // Foreign Keys
-            $table->foreignId('id_pengguna')->constrained('user', 'id_pengguna')->onDelete('cascade');
-            $table->foreignId('id_armada')->nullable()->constrained('armada', 'id_armada')->onDelete('set null');
-            $table->foreignId('id_layanan')->constrained('layanan', 'id_layanan')->onDelete('restrict');
-            $table->foreignId('id_supir')->nullable()->constrained('supir', 'id_supir')->onDelete('set null');
-
-            // Detail Pemesanan
+            $table->unsignedBigInteger('id_pengguna');
+            $table->unsignedBigInteger('id_layanan');
+            
+            // PENTING: Ini harus nullable agar bisa menggunakan sistem Dispatcher
+            $table->unsignedBigInteger('id_armada')->nullable();
+            $table->unsignedBigInteger('id_supir')->nullable();
+            
+            // Tanggal
             $table->date('tgl_pesan');
             $table->date('tgl_mulai');
-            $table->date('tgl_selesai');
+            $table->date('tgl_selesai')->nullable();
+            
+            // Lokasi
             $table->string('lokasi_jemput');
-            $table->string('lokasi_tujuan');
-            $table->float('total_biaya');
-            $table->string('status_pemesanan', 20);
-
-            // Kolom Opsional (nullable)
-            $table->string('deskripsi_barang')->nullable();
-            $table->float('est_berat_ton')->nullable();
+            $table->string('lokasi_tujuan')->nullable(); 
+            
+            // Keuangan & Status
+            $table->double('total_biaya', 15, 2)->default(0);
+            $table->string('status_pemesanan', 20)->default('Menunggu');
+            
+            // Detail Tambahan
+            // Kita ubah jadi text agar muat menampung preferensi user yang panjang
+            $table->text('deskripsi_barang')->nullable(); 
+            $table->double('est_berat_ton', 8, 2)->nullable();
             $table->string('foto_barang')->nullable();
             $table->integer('jumlah_orang')->nullable();
             $table->integer('lama_rental')->nullable();
+            
+            $table->timestamps();
         });
     }
 
