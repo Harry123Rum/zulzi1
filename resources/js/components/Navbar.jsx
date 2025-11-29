@@ -46,7 +46,7 @@ const Navbar = () => {
         if (isAuthenticated && user) {
             
             // Tentukan tujuan redirect berdasarkan Role
-            const profilePath = user.role_pengguna === 'admin' ? '/admin' : '/edit-profile';
+            const profilePath = user.role_pengguna === 'admin' ? '/admin' : '/profile';
 
             return (
                 <div 

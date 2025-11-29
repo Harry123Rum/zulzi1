@@ -54,13 +54,8 @@ Route::get('/about', [AboutController::class, 'index']);
 Route::get('/reviews/target/{id_pemesanan}', [ReviewController::class, 'getReviewTarget']);
 Route::post('/reviews', [ReviewController::class, 'store']);
 
-// Route Pemesanan
+// Route Armada List (Public untuk dropdown)
 Route::get('/armada-list', [PemesananController::class, 'getArmadaList']);
-Route::post('/pemesanan', [PemesananController::class, 'store']);
-Route::get('/pemesanan/{id}', [PemesananController::class, 'show']);
-
-// Route Pembayaran
-Route::post('/pembayaran', [PembayaranController::class, 'store']);
 
 /*
 |--------------------------------------------------------------------------
@@ -88,8 +83,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/', [ProfileController::class, 'update']); 
     });
 
-    // User Pemesanan History
+    // User Pemesanan (PINDAH KE SINI - HARUS LOGIN)
+    Route::post('/pemesanan', [PemesananController::class, 'store']);
+    Route::get('/pemesanan/{id}', [PemesananController::class, 'show']);
     Route::get('/user/pemesanan', [PemesananController::class, 'getUserOrders']);
+
+    // User Pembayaran (HARUS LOGIN)
+    Route::post('/pembayaran', [PembayaranController::class, 'store']);
 
     /*
     |--------------------------------------------------------------------------
